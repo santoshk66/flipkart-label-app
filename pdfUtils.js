@@ -12,8 +12,8 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
     const { width, height } = page.getSize();
 
     // ✅ More left & bottom margin
-    const x = 40;    // shifted right from left edge
-    const y = 310;   // moved up from bottom
+    const x = 100;    // shifted right from left edge
+    const y = 500;   // moved up from bottom
 
     page.drawText(`SKU: ${customSku}`, {
       x,
