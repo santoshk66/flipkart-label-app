@@ -6,10 +6,11 @@ function extractSkusFromText(text, mapping = {}) {
   const skuData = {};
 
   for (const line of lines) {
-    const match = line.match(/^\d+\s+([^\|]+)\|/);
+    // Match something like: "1 FK-SKU123 |"
+    const match = line.match(/^\s*\d+\s+([^\|\n]+)\s*\|/);  // more flexible regex
     if (match) {
       const flipkartSku = match[1].trim();
-      const customSku = mapping[flipkartSku] || "default";
+      const customSku = mapping?.[flipkartSku] || "default";
 
       if (!skuData[flipkartSku]) {
         skuData[flipkartSku] = { customSku, qty: 0 };
