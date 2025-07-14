@@ -2,13 +2,21 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs").promises;
+const fsSync = require("fs");
 const { parseMappingCSV } = require("./skuUtils");
 const { appendSkuToPdf } = require("./pdfUtils");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+["uploads", "processed"].forEach(dir => {
+  if (!fsSync.existsSync(dir)) {
+    fsSync.mkdirSync(dir, { recursive: true });
+  }
+});
+
 app.use(express.static("public"));
+
 
 const upload = multer({ dest: "uploads/" });
 
