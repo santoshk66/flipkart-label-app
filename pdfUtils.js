@@ -5,21 +5,25 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const pages = pdfDoc.getPages();
 
-  // Determine custom SKU or fallback
-  const flipkartSku = fileName.split(".")[0].trim(); // fallback strategy
+  const flipkartSku = fileName.split(".")[0].trim();
   const customSku = mapping[flipkartSku] || "default";
 
   for (let page of pages) {
-    const { width } = page.getSize();
+    const { width, height } = page.getSize();
 
-    // Bottom left: Above barcode (approx Y=85), left aligned
+    // Use different Y based on label height
+    const isShippingLabel = height < 500;
+    const yPos = isShippingLabel ? 40 : 85;
+
     page.drawText(`SKU: ${customSku}`, {
       x: 50,
-      y: 85,
+      y: yPos,
       size: 14,
       font: helvetica,
-      color: rgb(0.8, 0, 0), // red text for visibility
+      color: rgb(0, 0, 0),
     });
+
+    console.log(`Appended SKU "${customSku}" at y=${yPos} (height=${height})`);
   }
 
   return await pdfDoc.save();
