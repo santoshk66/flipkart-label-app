@@ -13,10 +13,10 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
 
     // Use different Y based on label height
     const isShippingLabel = height < 500;
-    const yPos = isShippingLabel ? 30 : 85;
+    const yPos = isShippingLabel ? 5 : 85;
 
     page.drawText(`SKU: ${customSku}`, {
-      x: 100,
+      x: 0,
       y: yPos,
       size: 14,
       font: helvetica,
