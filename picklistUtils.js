@@ -6,13 +6,16 @@ function extractSkusFromText(text, mapping = {}) {
   const skuData = {};
 
   for (const line of lines) {
-    // Extract any SKU that appears before the first '|' and has no spaces in it
+    // Extract SKU before first '|'
     const match = line.match(/^\s*([^\s|]+)\s*\|/);
 
     if (match) {
-      const flipkartSku = match[1].trim();
+      let flipkartSku = match[1].trim();
 
-      // Optional: exclude numeric-only values (like the "1", "2" in the quantity column)
+      // ✅ Remove leading digit(s) if they are stuck to SKU (e.g. 1A-SKU → A-SKU)
+      flipkartSku = flipkartSku.replace(/^\d+(?=[A-Za-z])/, "");
+
+      // Skip purely numeric lines like '1' or '2'
       if (/^\d+$/.test(flipkartSku)) continue;
 
       const customSku = mapping[flipkartSku] || "default";
@@ -27,6 +30,7 @@ function extractSkusFromText(text, mapping = {}) {
 
   return skuData;
 }
+
 
 
 
