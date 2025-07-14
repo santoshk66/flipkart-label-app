@@ -6,33 +6,33 @@ function extractSkusFromText(text, mapping = {}) {
   const skuData = {};
 
   for (const line of lines) {
-    // Extract SKU before first '|'
-    const match = line.match(/^\s*([^\s|]+)\s*\|/);
+    // Split by pipe and ensure there are at least 2 fields
+    const parts = line.split("|").map(p => p.trim());
+    if (parts.length < 2) continue;
 
-    if (match) {
-      let flipkartSku = match[1].trim();
+    // Likely SKU is in 2nd column
+    let flipkartSku = parts[0];
 
-      // ✅ Remove leading digit(s) if they are stuck to SKU (e.g. 1A-SKU → A-SKU)
-      flipkartSku = flipkartSku.replace(/^\d+(?=[A-Za-z])/, "");
+    // Remove leading digits if stuck to SKU (e.g., 1A-SKU → A-SKU)
+    flipkartSku = flipkartSku.replace(/^\d+(?=[A-Za-z])/, "");
 
-      // Skip purely numeric lines like '1' or '2'
-      if (/^\d+$/.test(flipkartSku)) continue;
+    // Skip if purely numeric or too short
+    if (/^\d+$/.test(flipkartSku) || flipkartSku.length < 3) continue;
 
-      const customSku = mapping[flipkartSku] || "default";
+    // Optional: Require dash in SKU for stricter validation
+    if (!/[A-Za-z]/.test(flipkartSku) || !flipkartSku.includes("-")) continue;
 
-      if (!skuData[flipkartSku]) {
-        skuData[flipkartSku] = { customSku, qty: 0 };
-      }
+    const customSku = mapping[flipkartSku] || "default";
 
-      skuData[flipkartSku].qty += 1;
+    if (!skuData[flipkartSku]) {
+      skuData[flipkartSku] = { customSku, qty: 0 };
     }
+
+    skuData[flipkartSku].qty += 1;
   }
 
   return skuData;
 }
-
-
-
 
 function generatePicklistCSV(skuData) {
   const headers = "Flipkart SKU,Custom SKU,Total Qty\n";
