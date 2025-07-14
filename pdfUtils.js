@@ -16,7 +16,7 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
     const yPos = isShippingLabel ? 30 : 85;
 
     page.drawText(`SKU: ${customSku}`, {
-      x: 50,
+      x: 100,
       y: yPos,
       size: 14,
       font: helvetica,
