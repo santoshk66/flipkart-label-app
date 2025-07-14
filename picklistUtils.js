@@ -4,34 +4,25 @@ const { parse } = require("csv-parse/sync");
 function extractSkusFromText(text, mapping = {}) {
   const lines = text.split("\n");
   const skuData = {};
-  let nextIsSkuLine = false;
 
   for (const line of lines) {
-    const trimmed = line.trim();
+    // Match any SKU-like string before a pipe (|)
+    const match = line.match(/^\s*\d*\s*([a-zA-Z0-9-]{3,})\s*\|/);
+    if (match) {
+      const flipkartSku = match[1].trim();
+      const customSku = mapping[flipkartSku] || "default";
 
-    if (trimmed === "SKU ID | Description") {
-      nextIsSkuLine = true;
-      continue;
-    }
-
-    if (nextIsSkuLine) {
-      // This line contains the SKU (after an optional quantity number)
-      const match = trimmed.match(/^\d*\s*([a-zA-Z0-9-]+)\s*\|/);
-      if (match) {
-        const flipkartSku = match[1].trim();
-        const customSku = mapping[flipkartSku] || "default";
-
-        if (!skuData[flipkartSku]) {
-          skuData[flipkartSku] = { customSku, qty: 0 };
-        }
-        skuData[flipkartSku].qty += 1;
+      if (!skuData[flipkartSku]) {
+        skuData[flipkartSku] = { customSku, qty: 0 };
       }
-      nextIsSkuLine = false; // Reset so we only look at 1 line after the title
+
+      skuData[flipkartSku].qty += 1;
     }
   }
 
   return skuData;
 }
+
 
 function generatePicklistCSV(skuData) {
   const headers = "Flipkart SKU,Custom SKU,Total Qty\n";
