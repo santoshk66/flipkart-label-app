@@ -8,20 +8,38 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   const flipkartSku = fileName.split(".")[0].trim();
   const customSku = mapping[flipkartSku] || "default";
 
-  for (const page of pages) {
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
     const { width, height } = page.getSize();
 
-    // ✅ More left & bottom margin
-    const x = 195;    // shifted right from left edge
-    const y = 460;   // moved up from bottom
+    // ✅ Step 1: Create new larger page
+    const newHeight = height + 60;
+    const newPage = pdfDoc.addPage([width, newHeight]);
 
-    page.drawText(`SKU: ${customSku}`, {
-      x,
-      y,
+    // ✅ Step 2: Copy old page content onto the new page (shifted upward)
+    const copiedPage = await pdfDoc.copyPages(pdfDoc, [i]);
+    const [oldPage] = copiedPage;
+    newPage.drawPage(oldPage, {
+      x: 0,
+      y: 60,
+    });
+
+    // ✅ Step 3: Draw SKU at bottom (new space)
+    newPage.drawText(`SKU: ${customSku}`, {
+      x: 40,
+      y: 25, // inside new margin space
       size: 11,
       font: helvetica,
       color: rgb(0, 0, 0),
     });
+
+    // ✅ Replace old page with new one
+    pages[i] = newPage;
+  }
+
+  // Remove original pages after duplication
+  while (pdfDoc.getPageCount() > pages.length) {
+    pdfDoc.removePage(0);
   }
 
   return await pdfDoc.save();
