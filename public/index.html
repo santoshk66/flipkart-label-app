@@ -96,10 +96,10 @@
     <!-- Header -->
     <h1 class="text-4xl md:text-5xl font-bold text-center header-glow">Flipkart Label Processor</h1>
 
-    <!-- Append SKU Form -->
+    <!-- Unified Form -->
     <div class="card p-8">
-      <h2 class="text-2xl font-semibold mb-6 text-white">Append SKU to Label</h2>
-      <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/process" class="space-y-6">
+      <h2 class="text-2xl font-semibold mb-6 text-white">Process Label and Picklist</h2>
+      <form id="processForm" enctype="multipart/form-data" class="space-y-6">
         <div>
           <label class="form-label block text-sm text-gray-200">Label PDF</label>
           <input type="file" name="labelPdf" required class="input-file mt-2 block w-full p-3 rounded-lg text-gray-200 focus:ring-2 focus:ring-purple-500" />
@@ -109,26 +109,7 @@
           <input type="file" name="skuMapping" class="input-file mt-2 block w-full p-3 rounded-lg text-gray-200 focus:ring-2 focus:ring-purple-500" />
         </div>
         <button type="submit" class="btn w-full py-3 px-4 rounded-lg text-white font-semibold flex items-center justify-center">
-          <span class="btn-text">Download Updated PDF</span>
-          <div class="loader ml-3"></div>
-        </button>
-      </form>
-    </div>
-
-    <!-- Generate Picklist Form -->
-    <div class="card p-8">
-      <h2 class="text-2xl font-semibold mb-6 text-white">Generate Picklist CSV</h2>
-      <form id="picklistForm" enctype="multipart/form-data" class="space-y-6">
-        <div>
-          <label class="form-label block text-sm text-gray-200">Label PDF</label>
-          <input type="file" name="labelPdf" required class="input-file mt-2 block w-full p-3 rounded-lg text-gray-200 focus:ring-2 focus:ring-purple-500" />
-        </div>
-        <div>
-          <label class="form-label block text-sm text-gray-200">SKU Mapping (Optional)</label>
-          <input type="file" name="skuMapping" class="input-file mt-2 block w-full p-3 rounded-lg text-gray-200 focus:ring-2 focus:ring-purple-500" />
-        </div>
-        <button type="submit" class="btn w-full py-3 px-4 rounded-lg text-white font-semibold flex items-center justify-center">
-          <span class="btn-text">Download Picklist</span>
+          <span class="btn-text">Generate Label & Picklist</span>
           <div class="loader ml-3"></div>
         </button>
       </form>
@@ -148,7 +129,7 @@
       document.body.classList.add('dark-mode');
     }
 
-    // Loader Functionality for Forms
+    // Loader Functionality
     function toggleLoader(button, show) {
       const loader = button.querySelector('.loader');
       const btnText = button.querySelector('.btn-text');
@@ -158,64 +139,54 @@
         button.disabled = true;
       } else {
         loader.style.display = 'none';
-        btnText.textContent = button.id === 'uploadForm' ? 'Download Updated PDF' : 'Download Picklist';
+        btnText.textContent = 'Generate Label & Picklist';
         button.disabled = false;
       }
     }
 
-    // Append SKU Form Submission
-    document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+    // Unified Form Submission
+    document.getElementById("processForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const button = this.querySelector('button');
       toggleLoader(button, true);
       try {
         const form = new FormData(this);
-        const res = await fetch("/process", {
+
+        // Process Label PDF
+        const labelRes = await fetch("/process", {
           method: "POST",
           body: form,
         });
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "updated_label.pdf";
-          a.click();
-          window.URL.revokeObjectURL(url);
+        if (labelRes.ok) {
+          const labelBlob = await labelRes.blob();
+          const labelUrl = window.URL.createObjectURL(labelBlob);
+          const labelA = document.createElement("a");
+          labelA.href = labelUrl;
+          labelA.download = "updated_label.pdf";
+          labelA.click();
+          window.URL.revokeObjectURL(labelUrl);
         } else {
           alert("Failed to process label.");
         }
-      } catch (error) {
-        alert("An error occurred while processing the label.");
-      } finally {
-        toggleLoader(button, false);
-      }
-    });
 
-    // Picklist Form Submission
-    document.getElementById("picklistForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const button = this.querySelector('button');
-      toggleLoader(button, true);
-      try {
-        const form = new FormData(this);
-        const res = await fetch("/generate-picklist", {
+        // Generate Picklist CSV
+        const picklistRes = await fetch("/generate-picklist", {
           method: "POST",
           body: form,
         });
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "picklist.csv";
-          a.click();
-          window.URL.revokeObjectURL(url);
+        if (picklistRes.ok) {
+          const picklistBlob = await picklistRes.blob();
+          const picklistUrl = window.URL.createObjectURL(picklistBlob);
+          const picklistA = document.createElement("a");
+          picklistA.href = picklistUrl;
+          picklistA.download = "picklist.csv";
+          picklistA.click();
+          window.URL.revokeObjectURL(picklistUrl);
         } else {
           alert("Failed to generate picklist.");
         }
       } catch (error) {
-        alert("An error occurred while generating the picklist.");
+        alert("An error occurred while processing the files.");
       } finally {
         toggleLoader(button, false);
       }
