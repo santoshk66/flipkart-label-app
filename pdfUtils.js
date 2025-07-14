@@ -11,16 +11,16 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   for (const page of pages) {
     const { width, height } = page.getSize();
 
-    // Final safe coordinates: above barcode/footer
-    const x = 20;
-    const y = 330;
+    // ✅ More left & bottom margin
+    const x = 40;    // shifted right from left edge
+    const y = 310;   // moved up from bottom
 
     page.drawText(`SKU: ${customSku}`, {
       x,
       y,
       size: 11,
       font: helvetica,
-      color: rgb(0.05, 0.05, 0.05),
+      color: rgb(0, 0, 0),
     });
   }
 
