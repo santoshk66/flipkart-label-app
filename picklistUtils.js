@@ -6,7 +6,8 @@ function extractSkusFromText(text, mapping = {}) {
   const skuData = {};
 
   for (const line of lines) {
-    const match = line.match(/^\s*\d+\s+([^\|\n]+)\s*\|/);
+    // Match line starting with digit, followed by SKU, then |
+    const match = line.match(/^\s*\d+\s+([^\s|]+)\s*\|/);
     if (match) {
       const flipkartSku = match[1].trim();
       const customSku = mapping[flipkartSku] || "default";
@@ -14,12 +15,14 @@ function extractSkusFromText(text, mapping = {}) {
       if (!skuData[flipkartSku]) {
         skuData[flipkartSku] = { customSku, qty: 0 };
       }
+
       skuData[flipkartSku].qty += 1;
     }
   }
 
   return skuData;
 }
+
 
 
 function generatePicklistCSV(skuData) {
