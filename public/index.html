@@ -2,91 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flipkart Label Processor</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.03); }
-      100% { transform: scale(1); }
-    }
-    .pulse-effect {
-      animation: pulse 2s ease-in-out infinite;
-    }
-    .gradient-bg {
-      background: linear-gradient(135deg, #111827, #1f2937);
-    }
-    .hover-scale {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .hover-scale:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-    }
-    .glassmorphism {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    .input-focus {
-      transition: border-color 0.3s ease;
-    }
-    .input-focus:focus {
-      border-color: #6366f1;
-      outline: none;
-    }
-  </style>
 </head>
-<body class="gradient-bg min-h-screen flex items-center justify-center p-6 font-sans">
-  <div class="glassmorphism rounded-3xl p-8 max-w-lg w-full shadow-lg">
-    <h1 class="text-4xl font-extrabold text-white text-center mb-10 tracking-tight">Flipkart Label Processor</h1>
+<body>
+  <h2>Append SKU to Flipkart Label</h2>
+  <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/process">
+    <input type="file" name="labelPdf" required />
+    <input type="file" name="skuMapping" />
+    <button type="submit">Download Updated PDF</button>
+  </form>
 
-    <div class="space-y-10">
-      <!-- Label Append Form -->
-      <div class="glassmorphism p-6 rounded-2xl">
-        <h2 class="text-2xl font-semibold text-white mb-5 tracking-tight">Append SKU to Label</h2>
-        <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/process" class="space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-gray-100">Label PDF</label>
-            <input type="file" name="labelPdf" required 
-                   class="mt-2 block w-full text-sm text-gray-200 file:mr-4 file:py-2 file:px-5 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 input-focus transition-colors">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-100">SKU Mapping</label>
-            <input type="file" name="skuMapping" 
-                   class="mt-2 block w-full text-sm text-gray-200 file:mr-4 file:py-2 file:px-5 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 input-focus transition-colors">
-          </div>
-          <button type="submit" 
-                  class="w-full py-3 px-4 bg-indigo-500 text-white font-semibold rounded-full hover:bg-indigo-600 hover-scale pulse-effect transition-colors">
-            Download Updated PDF
-          </button>
-        </form>
-      </div>
-
-      <!-- Picklist Generator Form -->
-      <div class="glassmorphism p-6 rounded-2xl">
-        <h2 class="text-2xl font-semibold text-white mb-5 tracking-tight">Generate Picklist CSV</h2>
-        <form id="picklistForm" enctype="multipart/form-data" class="space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-gray-100">Label PDF</label>
-            <input type="file" name="labelPdf" required 
-                   class="mt-2 block w-full text-sm text-gray-200 file:mr-4 file:py-2 file:px-5 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 input-focus transition-colors">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-100">SKU Mapping</label>
-            <input type="file" name="skuMapping" 
-                   class="mt-2 block w-full text-sm text-gray-200 file:mr-4 file:py-2 file:px-5 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 input-focus transition-colors">
-          </div>
-          <button type="submit" 
-                  class="w-full py-3 px-4 bg-indigo-500 text-white font-semibold rounded-full hover:bg-indigo-600 hover-scale pulse-effect transition-colors">
-            Download Picklist
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
+  <h2>Generate Picklist CSV</h2>
+  <form id="picklistForm" enctype="multipart/form-data">
+    <input type="file" name="labelPdf" required />
+    <input type="file" name="skuMapping" />
+    <button type="submit">Download Picklist</button>
+  </form>
 
   <script>
     document.getElementById("picklistForm").addEventListener("submit", async function (e) {
