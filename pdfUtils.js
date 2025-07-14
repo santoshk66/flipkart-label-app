@@ -6,17 +6,22 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
 
   const pages = pdfDoc.getPages();
 
-  const flipkartSku = fileName.split(".")[0]; // filename without .pdf
-  const customSku = mapping[flipkartSku] || flipkartSku;
+  // Extract Flipkart SKU from filename (e.g., ABC123.pdf => ABC123)
+  const flipkartSku = fileName.split(".")[0].trim();
+  const customSku = mapping[flipkartSku] || "default"; // fallback to 'default'
+
+  console.log("Flipkart SKU:", flipkartSku);
+  console.log("Custom SKU to draw:", customSku);
 
   for (let page of pages) {
-    page.drawText(`Custom SKU: ${customSku}`, {
+    page.drawText(`SKU: ${customSku}`, {
       x: 50,
-      y: 30,
-      size: 12,
+      y: 100,
+      size: 16,
       font: helvetica,
       color: rgb(0, 0, 0),
     });
+    console.log(`Custom SKU appended to page`);
   }
 
   return await pdfDoc.save();
