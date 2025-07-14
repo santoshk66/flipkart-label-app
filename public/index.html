@@ -1,31 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Flipkart Label SKU Appender</title>
-  <link rel="stylesheet" href="/loader.css">
+  <meta charset="UTF-8">
+  <title>Flipkart Label Processor</title>
 </head>
 <body>
-  <h2>Upload Flipkart Label PDF + Optional SKU Mapping CSV</h2>
-  <form id="upload-form" action="/process" method="post" enctype="multipart/form-data">
-    <label>Label PDF:</label>
-    <input type="file" name="labelPdf" accept="application/pdf" required><br><br>
-    <label>Mapping CSV (optional):</label>
-    <input type="file" name="skuMapping" accept=".csv"><br><br>
-    <button type="submit">Upload & Process</button>
+  <h2>Append SKU to Flipkart Label</h2>
+  <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/process">
+    <input type="file" name="labelPdf" required />
+    <input type="file" name="skuMapping" />
+    <button type="submit">Download Updated PDF</button>
   </form>
 
-  <div id="loader" class="loader-wrapper">
-    <div class="spinner"></div>
-    <p>Processing your file...</p>
-  </div>
+  <h2>Generate Picklist CSV</h2>
+  <form id="picklistForm" enctype="multipart/form-data">
+    <input type="file" name="labelPdf" required />
+    <input type="file" name="skuMapping" />
+    <button type="submit">Download Picklist</button>
+  </form>
 
   <script>
-    const form = document.getElementById("upload-form");
-    const loader = document.getElementById("loader");
+    document.getElementById("picklistForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = new FormData(this);
+      const res = await fetch("/generate-picklist", {
+        method: "POST",
+        body: form,
+      });
 
-    form.addEventListener("submit", () => {
-      loader.style.display = "flex";
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "picklist.csv";
+        a.click();
+      } else {
+        alert("Failed to generate picklist.");
+      }
     });
   </script>
 </body>
