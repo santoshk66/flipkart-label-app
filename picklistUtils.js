@@ -6,10 +6,15 @@ function extractSkusFromText(text, mapping = {}) {
   const skuData = {};
 
   for (const line of lines) {
-    // Match any SKU-like string before a pipe (|)
-    const match = line.match(/^\s*\d*\s*([a-zA-Z0-9-]{3,})\s*\|/);
+    // Extract any SKU that appears before the first '|' and has no spaces in it
+    const match = line.match(/^\s*([^\s|]+)\s*\|/);
+
     if (match) {
       const flipkartSku = match[1].trim();
+
+      // Optional: exclude numeric-only values (like the "1", "2" in the quantity column)
+      if (/^\d+$/.test(flipkartSku)) continue;
+
       const customSku = mapping[flipkartSku] || "default";
 
       if (!skuData[flipkartSku]) {
@@ -22,6 +27,7 @@ function extractSkusFromText(text, mapping = {}) {
 
   return skuData;
 }
+
 
 
 function generatePicklistCSV(skuData) {
