@@ -28,7 +28,7 @@ app.post("/process", upload.fields([
     }
 
     const pdfBuffer = await fs.readFile(pdfFile.path);
-    const modifiedPdf = await appendSkuToPdf(pdfBuffer, mapping);
+    const modifiedPdf = await appendSkuToPdf(pdfBuffer, mapping, pdfFile.originalname);
 
     const outputPath = path.join("processed", `output-${Date.now()}.pdf`);
     await fs.writeFile(outputPath, modifiedPdf);
