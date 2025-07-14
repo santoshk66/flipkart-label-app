@@ -8,22 +8,17 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   const flipkartSku = fileName.split(".")[0].trim();
   const customSku = mapping[flipkartSku] || "default";
 
-  for (let page of pages) {
+  for (const page of pages) {
     const { width, height } = page.getSize();
 
-    // Use different Y based on label height
-    const isShippingLabel = height < 500;
-    const yPos = isShippingLabel ? 350 : 85;
-
+    // Place SKU just above the "Not for resale" line
     page.drawText(`SKU: ${customSku}`, {
-      x: 5,
-      y: yPos,
-      size: 14,
+      x: 10,              // left side alignment
+      y: 360,             // near bottom of the label
+      size: 12,
       font: helvetica,
       color: rgb(0, 0, 0),
     });
-
-    console.log(`Appended SKU "${customSku}" at y=${yPos} (height=${height})`);
   }
 
   return await pdfDoc.save();
