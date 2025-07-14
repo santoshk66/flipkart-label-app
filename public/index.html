@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flipkart Label SKU Appender</title>
+  <link rel="stylesheet" href="/loader.css">
+</head>
+<body>
+  <h2>Upload Flipkart Label PDF + Optional SKU Mapping CSV</h2>
+  <form id="upload-form" action="/process" method="post" enctype="multipart/form-data">
+    <label>Label PDF:</label>
+    <input type="file" name="labelPdf" accept="application/pdf" required><br><br>
+    <label>Mapping CSV (optional):</label>
+    <input type="file" name="skuMapping" accept=".csv"><br><br>
+    <button type="submit">Upload & Process</button>
+  </form>
+
+  <div id="loader" class="loader-wrapper">
+    <div class="spinner"></div>
+    <p>Processing your file...</p>
+  </div>
+
+  <script>
+    const form = document.getElementById("upload-form");
+    const loader = document.getElementById("loader");
+
+    form.addEventListener("submit", () => {
+      loader.style.display = "flex";
+    });
+  </script>
+</body>
+</html>
