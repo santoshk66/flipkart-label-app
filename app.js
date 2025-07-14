@@ -70,6 +70,7 @@ app.post("/generate-picklist", upload.fields([
     }
 
     const parsed = await pdfParse(pdfBuffer);
+    console.log("🔍 PDF Text Preview:\n", parsed.text.slice(0, 1000));
     const skuData = extractSkusFromText(parsed.text, mapping);
     const csvContent = generatePicklistCSV(skuData);
 
