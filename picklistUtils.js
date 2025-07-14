@@ -6,11 +6,10 @@ function extractSkusFromText(text, mapping = {}) {
   const skuData = {};
 
   for (const line of lines) {
-    // Match something like: "1 FK-SKU123 |"
-    const match = line.match(/^\s*\d+\s+([^\|\n]+)\s*\|/);  // more flexible regex
+    const match = line.match(/^\s*\d+\s+([^\|\n]+)\s*\|/);
     if (match) {
       const flipkartSku = match[1].trim();
-      const customSku = mapping?.[flipkartSku] || "default";
+      const customSku = mapping[flipkartSku] || "default";
 
       if (!skuData[flipkartSku]) {
         skuData[flipkartSku] = { customSku, qty: 0 };
@@ -21,6 +20,7 @@ function extractSkusFromText(text, mapping = {}) {
 
   return skuData;
 }
+
 
 function generatePicklistCSV(skuData) {
   const headers = "Flipkart SKU,Custom SKU,Total Qty\n";
