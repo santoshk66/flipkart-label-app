@@ -1,20 +1,15 @@
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 
-async function appendSkuToPdf(pdfBuffer, mapping = {}) {
+async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf") {
   const pdfDoc = await PDFDocument.load(pdfBuffer);
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
   const pages = pdfDoc.getPages();
 
+  const flipkartSku = fileName.split(".")[0]; // filename without .pdf
+  const customSku = mapping[flipkartSku] || flipkartSku;
+
   for (let page of pages) {
-    const text = await page.getTextContent();
-    const skuMatch = text.items.find((item) =>
-      /SKU\s*:\s*([A-Z0-9\-]+)/i.test(item.str)
-    );
-
-    let flipkartSku = skuMatch ? skuMatch.str.split(":")[1].trim() : "UNKNOWN";
-    let customSku = mapping[flipkartSku] || flipkartSku;
-
     page.drawText(`Custom SKU: ${customSku}`, {
       x: 50,
       y: 30,
