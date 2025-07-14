@@ -5,27 +5,12 @@ function extractSkusFromText(text, mapping = {}) {
   const lines = text.split("\n");
   const skuData = {};
 
-for (let i = 0; i < lines.length; i++) {
-  const line = lines[i];
-  const match = line.match(/^\s*\d+\s+([^\s|]+)\s*\|/);
+  for (const line of lines) {
+    // Match any line with SKU like: 2supercam-wifi-indoor | or 2lens-wifi-small | ...
+    const match = line.match(/^\s*([a-zA-Z0-9-]+)\s*\|/);
 
-  if (match) {
-    const flipkartSku = match[1].trim();
-    const customSku = mapping[flipkartSku] || "default";
-
-    if (!skuData[flipkartSku]) {
-      skuData[flipkartSku] = { customSku, qty: 0 };
-    }
-
-    skuData[flipkartSku].qty += 1;
-  }
-
-  // 🔄 Try fallback if line is just a number and next line has SKU | ...
-  if (!match && /^\s*\d+\s*$/.test(line) && i + 1 < lines.length) {
-    const nextLine = lines[i + 1];
-    const nextMatch = nextLine.match(/^\s*([^\s|]+)\s*\|/);
-    if (nextMatch) {
-      const flipkartSku = nextMatch[1].trim();
+    if (match) {
+      const flipkartSku = match[1].trim();
       const customSku = mapping[flipkartSku] || "default";
 
       if (!skuData[flipkartSku]) {
@@ -35,7 +20,6 @@ for (let i = 0; i < lines.length; i++) {
       skuData[flipkartSku].qty += 1;
     }
   }
-}
 
   return skuData;
 }
