@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flipkart Label Processor</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -87,8 +87,8 @@
     <!-- Theme Toggle -->
     <div class="flex justify-end">
       <button id="themeToggle" class="p-2 rounded-full bg-gray-800/50 text-white hover:bg-gray-700/50 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
         </svg>
       </button>
     </div>
@@ -96,7 +96,7 @@
     <!-- Header -->
     <h1 class="text-4xl md:text-5xl font-bold text-center header-glow">Flipkart Label Processor</h1>
 
-    <!-- Form 1: Process Label + Picklist -->
+    <!-- Unified Form -->
     <div class="card p-8">
       <h2 class="text-2xl font-semibold mb-6 text-white">Process Label and Picklist</h2>
       <form id="processForm" enctype="multipart/form-data" class="space-y-6">
@@ -114,35 +114,22 @@
         </button>
       </form>
     </div>
-
-    <!-- Form 2: Crop Invoices + Labels into Combined PDF -->
-    <div class="card p-8">
-      <h2 class="text-2xl font-semibold mb-6 text-white">Crop Invoices + Labels (Combined PDF)</h2>
-      <form id="cropForm" enctype="multipart/form-data" class="space-y-6">
-        <div>
-          <label class="form-label block text-sm text-gray-200">Upload Mixed Flipkart PDF</label>
-          <input type="file" name="labelPdf" required class="input-file mt-2 block w-full p-3 rounded-lg text-gray-200 focus:ring-2 focus:ring-purple-500" />
-        </div>
-        <button type="submit" class="btn w-full py-3 px-4 rounded-lg text-white font-semibold flex items-center justify-center">
-          <span class="btn-text">Crop & Combine</span>
-          <div class="loader ml-3"></div>
-        </button>
-      </form>
-    </div>
   </div>
 
   <script>
-    // Theme toggle
+    // Theme Toggle Functionality
     const themeToggle = document.getElementById('themeToggle');
     themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('dark-mode');
       localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
     });
 
+    // Load saved theme
     if (localStorage.getItem('theme') === 'dark') {
       document.body.classList.add('dark-mode');
     }
 
+    // Loader Functionality
     function toggleLoader(button, show) {
       const loader = button.querySelector('.loader');
       const btnText = button.querySelector('.btn-text');
@@ -152,74 +139,54 @@
         button.disabled = true;
       } else {
         loader.style.display = 'none';
-        btnText.textContent = btnText.getAttribute("data-original") || "Submit";
+        btnText.textContent = 'Generate Label & Picklist';
         button.disabled = false;
       }
     }
 
-    // Form 1 - Label + Picklist
+    // Unified Form Submission
     document.getElementById("processForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const button = this.querySelector('button');
       toggleLoader(button, true);
       try {
         const form = new FormData(this);
-        const labelRes = await fetch("/process", { method: "POST", body: form });
+
+        // Process Label PDF
+        const labelRes = await fetch("/process", {
+          method: "POST",
+          body: form,
+        });
         if (labelRes.ok) {
           const labelBlob = await labelRes.blob();
-          const labelUrl = URL.createObjectURL(labelBlob);
-          const link = document.createElement("a");
-          link.href = labelUrl;
-          link.download = "updated_label.pdf";
-          link.click();
-          URL.revokeObjectURL(labelUrl);
+          const labelUrl = window.URL.createObjectURL(labelBlob);
+          const labelA = document.createElement("a");
+          labelA.href = labelUrl;
+          labelA.download = "updated_label.pdf";
+          labelA.click();
+          window.URL.revokeObjectURL(labelUrl);
         } else {
           alert("Failed to process label.");
         }
 
-        const picklistRes = await fetch("/generate-picklist", { method: "POST", body: form });
-        if (picklistRes.ok) {
-          const picklistBlob = await picklistRes.blob();
-          const picklistUrl = URL.createObjectURL(picklistBlob);
-          const link = document.createElement("a");
-          link.href = picklistUrl;
-          link.download = "picklist.csv";
-          link.click();
-          URL.revokeObjectURL(picklistUrl);
-        } else {
-          alert("Failed to generate picklist.");
-        }
-      } catch {
-        alert("Error occurred while processing.");
-      } finally {
-        toggleLoader(button, false);
-      }
-    });
-
-    // Form 2 - Crop Combined
-    document.getElementById("cropForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const button = this.querySelector('button');
-      toggleLoader(button, true);
-      try {
-        const form = new FormData(this);
-        const cropRes = await fetch("/crop-combined", {
+        // Generate Picklist CSV
+        const picklistRes = await fetch("/generate-picklist", {
           method: "POST",
           body: form,
         });
-        if (cropRes.ok) {
-          const blob = await cropRes.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "cropped_combined.pdf";
-          a.click();
-          URL.revokeObjectURL(url);
+        if (picklistRes.ok) {
+          const picklistBlob = await picklistRes.blob();
+          const picklistUrl = window.URL.createObjectURL(picklistBlob);
+          const picklistA = document.createElement("a");
+          picklistA.href = picklistUrl;
+          picklistA.download = "picklist.csv";
+          picklistA.click();
+          window.URL.revokeObjectURL(picklistUrl);
         } else {
-          alert("Cropping failed.");
+          alert("Failed to generate picklist.");
         }
-      } catch {
-        alert("Error during cropping.");
+      } catch (error) {
+        alert("An error occurred while processing the files.");
       } finally {
         toggleLoader(button, false);
       }
