@@ -3,55 +3,50 @@ const { PDFDocument } = require("pdf-lib");
 const pdfParse = require("pdf-parse");
 
 /**
- * Detects whether a page is an invoice or label based on its text content
+ * Detect if it's an invoice page based on text content
  */
 function isInvoicePage(text) {
   return /tax invoice|invoice number|gst/i.test(text);
 }
 
 /**
- * Applies cropping to invoice or label page
+ * Crop based on type
  */
 function cropPage(page, type) {
   const { width, height } = page.getSize();
-
   if (type === "invoice") {
-    page.setCropBox(0, 120, width, height - 120); // Crop 120pt top
-  } else if (type === "label") {
-    page.setCropBox(0, 0, width, height - 20); // Optional crop for label
+    page.setCropBox(0, 120, width, height - 120); // remove top
+  } else {
+    page.setCropBox(0, 0, width, height - 20); // optional bottom trim
   }
 }
 
 /**
- * Splits and crops a mixed Flipkart label PDF into invoices and shipping labels
+ * Create a single output PDF with cropped invoice and label pages
  */
-async function separateAndCrop(inputPath, outInvoicePath, outLabelPath) {
-  const originalPdf = await fs.readFile(inputPath);
-  const pdfDoc = await PDFDocument.load(originalPdf);
-  const parsed = await pdfParse(originalPdf);
+async function separateAndCrop(inputPath, outputPath) {
+  const inputBuffer = await fs.readFile(inputPath);
+  const originalDoc = await PDFDocument.load(inputBuffer);
+  const parsedText = await pdfParse(inputBuffer);
 
-  const invoicePdf = await PDFDocument.create();
-  const labelPdf = await PDFDocument.create();
+  const newDoc = await PDFDocument.create();
+  const originalPages = originalDoc.getPages();
+  const texts = parsedText.text.split(/\f/); // form feed = page break
 
-  const pages = pdfDoc.getPages();
-  const texts = parsed.text.split(/\f/); // Split by form feed = page separator
-
-  for (let i = 0; i < pages.length; i++) {
+  for (let i = 0; i < originalPages.length; i++) {
+    const page = originalPages[i];
     const text = texts[i] || "";
-    const isInvoice = isInvoicePage(text);
-    const page = pages[i];
 
-    const [copiedPage] = await (isInvoice ? invoicePdf : labelPdf).copyPages(pdfDoc, [i]);
-    cropPage(copiedPage, isInvoice ? "invoice" : "label");
+    const type = isInvoicePage(text) ? "invoice" : "label";
 
-    (isInvoice ? invoicePdf : labelPdf).addPage(copiedPage);
+    const [copiedPage] = await newDoc.copyPages(originalDoc, [i]);
+    cropPage(copiedPage, type);
+    newDoc.addPage(copiedPage);
   }
 
-  await fs.writeFile(outInvoicePath, await invoicePdf.save());
-  await fs.writeFile(outLabelPath, await labelPdf.save());
-
-  console.log("✅ Cropping complete.");
+  const finalPdf = await newDoc.save();
+  await fs.writeFile(outputPath, finalPdf);
+  console.log("✅ Combined PDF with cropped pages created.");
 }
 
-// ✅ Export the function so Express route can use it
 module.exports = { separateAndCrop };
