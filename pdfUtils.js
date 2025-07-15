@@ -16,45 +16,40 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   const outputPdf = await PDFDocument.create();
 
   for (let i = 0; i < originalPages.length; i++) {
-    const origPage = originalPages[i];
-    const { width, height } = origPage.getSize();
+    const page = originalPages[i];
+    const { width, height } = page.getSize();
     const flipkartSku = skuList[i] || "UNKNOWN";
-    const customSku = mapping[flipkartSku] || "default";
+    const customSku = mapping[flipkartSku] || flipkartSku;
 
-    // Embed page once, reuse for both crops
-    const embeddedPage = await outputPdf.embedPage(origPage);
+    const embeddedPage = await outputPdf.embedPage(page);
 
-    // --- Label Page (Top Half) ---
-    const labelPage = outputPdf.addPage([width, height / 2]);
+    // ----- LABEL PAGE -----
+    const labelPage = outputPdf.addPage([width, height]);
     labelPage.drawPage(embeddedPage, {
       x: 0,
-      y: -height / 2,
+      y: 0,
       width,
       height,
     });
+
+    // ✅ Add SKU near "Not for Sale" area (bottom right-ish of label)
     labelPage.drawText(`SKU: ${customSku}`, {
-      x: 195,
-      y: 460 / 2, // Adjusted for half-page height
+      x: 400,       // Adjust if you want left side
+      y: 50,        // Bottom area
       size: 11,
       font: helvetica,
       color: rgb(0, 0, 0),
     });
 
-    // --- Invoice Page (Bottom Half) ---
-    const invoicePage = outputPdf.addPage([width, height / 2]);
+    // ----- INVOICE PAGE -----
+    const invoicePage = outputPdf.addPage([width, height]);
     invoicePage.drawPage(embeddedPage, {
       x: 0,
-      y: -height,
+      y: -height,   // Shift full page down so bottom half shows
       width,
       height,
     });
-    invoicePage.drawText(`SKU: ${customSku}`, {
-      x: 195,
-      y: 215,
-      size: 11,
-      font: helvetica,
-      color: rgb(0, 0, 0),
-    });
+    // ❌ No SKU drawn on invoice as per your instruction
   }
 
   return await outputPdf.save();
