@@ -7,7 +7,6 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   const helvetica = await originalPdf.embedFont(StandardFonts.Helvetica);
   const originalPages = originalPdf.getPages();
 
-  // Extract SKU data
   const parsedText = await pdfParse(pdfBuffer);
   const skuData = extractSkusFromText(parsedText.text, mapping);
   const skuList = Object.entries(skuData).flatMap(([sku, data]) =>
@@ -17,43 +16,41 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   const outputPdf = await PDFDocument.create();
 
   for (let i = 0; i < originalPages.length; i++) {
-    const page = originalPages[i];
-    const { width, height } = page.getSize();
-
+    const origPage = originalPages[i];
+    const { width, height } = origPage.getSize();
     const flipkartSku = skuList[i] || "UNKNOWN";
     const customSku = mapping[flipkartSku] || "default";
 
+    // Embed page once, reuse for both crops
+    const embeddedPage = await outputPdf.embedPage(origPage);
+
     // --- Label Page (Top Half) ---
-    const [labelCopy] = await outputPdf.copyPages(originalPdf, [i]);
     const labelPage = outputPdf.addPage([width, height / 2]);
-    labelPage.drawPage(labelCopy, {
+    labelPage.drawPage(embeddedPage, {
       x: 0,
       y: -height / 2,
       width,
       height,
     });
-    // ✅ Use original Y = 460 coordinate (adjusted for half-height page)
     labelPage.drawText(`SKU: ${customSku}`, {
       x: 195,
-      y: 460 / 2,  // Scaled to match the cropped size
+      y: 460 / 2, // Adjusted for half-page height
       size: 11,
       font: helvetica,
       color: rgb(0, 0, 0),
     });
 
     // --- Invoice Page (Bottom Half) ---
-    const [invoiceCopy] = await outputPdf.copyPages(originalPdf, [i]);
     const invoicePage = outputPdf.addPage([width, height / 2]);
-    invoicePage.drawPage(invoiceCopy, {
+    invoicePage.drawPage(embeddedPage, {
       x: 0,
       y: -height,
       width,
       height,
     });
-    // 🟡 Optional: Draw SKU here too (or remove this block if not needed)
     invoicePage.drawText(`SKU: ${customSku}`, {
       x: 195,
-      y: 215, // Adjusted midpoint of bottom half
+      y: 215,
       size: 11,
       font: helvetica,
       color: rgb(0, 0, 0),
