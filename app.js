@@ -98,11 +98,11 @@ app.post("/crop-combined", upload.single("labelPdf"), async (req, res) => {
     await separateAndCrop(inputPath, combinedPath);
 
     res.download(combinedPath, "cropped-combined.pdf", () => {
-      fs.unlink(inputPath).catch(() => {});
+      fs.unlink(pdfFile.path).catch(() => {});
       fs.unlink(combinedPath).catch(() => {});
     });
   } catch (err) {
-    console.error("Cropping Error:", err);
+    console.error("Crop Combined Error:", err);
     res.status(500).send("Failed to crop pages");
   }
 });
