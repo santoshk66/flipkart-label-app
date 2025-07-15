@@ -1,73 +1,64 @@
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const pdfParse = require("pdf-parse");
+const { extractSkusFromText } = require("./skuUtils");
 
 /**
- * Detects whether a page is an invoice or label based on its text content
+ * Detects whether a page is an invoice or label based on text
  */
 function isInvoicePage(text) {
-  return /invoice number|gst|tax invoice/i.test(text);
+  return /invoice\s*number|gst|tax invoice/i.test(text);
 }
 
 /**
- * Crop box logic per page type
+ * Crop logic for invoices/labels
  */
 function cropPage(page, type) {
   const { width, height } = page.getSize();
-
   if (type === "invoice") {
-    page.setCropBox(0, 120, width, height - 120);
-  } else if (type === "label") {
-    page.setCropBox(0, 0, width, height - 20);
+    page.setCropBox(0, 100, width, height - 100); // Remove top 100pt
+  } else {
+    page.setCropBox(0, 0, width, height - 20); // Crop slightly from bottom
   }
 }
 
 /**
- * Splits the PDF into individual pages and annotates label pages with SKU
+ * Appends SKUs and crops invoice/label pages.
  */
-async function separateAndCropUnified(pdfBuffer, mapping = {}) {
-  const parsed = await pdfParse(pdfBuffer);
-  const texts = parsed.text.split(/\f/);
-
+async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf") {
   const originalPdf = await PDFDocument.load(pdfBuffer);
-  const unifiedPdf = await PDFDocument.create();
-  const font = await unifiedPdf.embedFont(StandardFonts.Helvetica);
+  const helvetica = await originalPdf.embedFont(StandardFonts.Helvetica);
+  const pages = originalPdf.getPages();
+  const parsed = await pdfParse(pdfBuffer);
+  const texts = parsed.text.split(/\f/); // Split by page
 
-  const skuLogic = require("./skuUtils");
-  const skuData = skuLogic.extractSkusFromText(parsed.text, mapping);
-
+  const skuData = extractSkusFromText(parsed.text, mapping);
   const skuList = Object.entries(skuData).flatMap(([sku, data]) =>
     Array(data.qty).fill(sku)
   );
 
-  const originalPages = originalPdf.getPages();
-  let labelIndex = 0;
-
-  for (let i = 0; i < originalPages.length; i++) {
+  for (let i = 0; i < pages.length; i++) {
     const text = texts[i] || "";
-    const type = isInvoicePage(text) ? "invoice" : "label";
+    const isInvoice = isInvoicePage(text);
+    const page = pages[i];
+    cropPage(page, isInvoice ? "invoice" : "label");
 
-    const [copiedPage] = await unifiedPdf.copyPages(originalPdf, [i]);
-    cropPage(copiedPage, type);
-
-    if (type === "label") {
-      const sku = skuList[labelIndex] || "UNKNOWN";
-      const custom = mapping[sku] || "default";
-      copiedPage.drawText(`SKU: ${custom}`, {
+    // Only label pages get SKU stamped
+    if (!isInvoice) {
+      const flipkartSku = skuList[i] || "UNKNOWN";
+      const customSku = mapping[flipkartSku] || flipkartSku;
+      page.drawText(`SKU: ${customSku}`, {
         x: 195,
         y: 460,
-        font,
         size: 11,
+        font: helvetica,
         color: rgb(0, 0, 0),
       });
-      labelIndex++;
     }
-
-    unifiedPdf.addPage(copiedPage);
   }
 
-  return await unifiedPdf.save();
+  return await originalPdf.save();
 }
 
 module.exports = {
-  separateAndCropUnified,
+  appendSkuToPdf
 };
