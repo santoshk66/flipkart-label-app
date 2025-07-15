@@ -6,6 +6,7 @@ const fsSync = require("fs");
 const { parseMappingCSV } = require("./skuUtils");
 const { appendSkuToPdf } = require("./pdfUtils");
 const { extractSkusFromText, generatePicklistCSV } = require("./picklistUtils");
+const { separateAndCrop } = require("./separateAndCrop"); // Make sure this is exported in that file
 const pdfParse = require("pdf-parse");
 
 const app = express();
@@ -85,6 +86,30 @@ app.post("/generate-picklist", upload.fields([
     res.status(500).send("Failed to generate picklist");
   }
 });
+
+app.post("/separate", upload.single("labelPdf"), async (req, res) => {
+  try {
+    const pdfFile = req.file;
+    if (!pdfFile) return res.status(400).send("PDF file missing");
+
+    const inputPath = pdfFile.path;
+    const invoicePath = path.join("processed", `invoices-${Date.now()}.pdf`);
+    const labelPath = path.join("processed", `labels-${Date.now()}.pdf`);
+
+    await separateAndCrop(inputPath, invoicePath, labelPath);
+
+    // Serve both files as zip or as links (simple: return success)
+    res.json({
+      message: "PDF separated successfully",
+      invoicePdf: `/processed/${path.basename(invoicePath)}`,
+      labelPdf: `/processed/${path.basename(labelPath)}`
+    });
+  } catch (err) {
+    console.error("Separation Error:", err);
+    res.status(500).send("Failed to separate PDF");
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
