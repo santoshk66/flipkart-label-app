@@ -6,7 +6,7 @@ const fsSync = require("fs");
 const { parseMappingCSV } = require("./skuUtils");
 const { appendSkuToPdf } = require("./pdfUtils");
 const { extractSkusFromText, generatePicklistCSV } = require("./picklistUtils");
-const { separateAndCrop } = require("./separateAndCrop"); // Make sure this is exported in that file
+const { separateAndCrop } = require("./separateAndCrop");
 const pdfParse = require("pdf-parse");
 
 const app = express();
@@ -87,28 +87,25 @@ app.post("/generate-picklist", upload.fields([
   }
 });
 
-app.post("/separate", upload.single("labelPdf"), async (req, res) => {
+app.post("/crop-combined", upload.single("labelPdf"), async (req, res) => {
   try {
     const pdfFile = req.file;
     if (!pdfFile) return res.status(400).send("PDF file missing");
 
     const inputPath = pdfFile.path;
-    const invoicePath = path.join("processed", `invoices-${Date.now()}.pdf`);
-    const labelPath = path.join("processed", `labels-${Date.now()}.pdf`);
+    const combinedPath = path.join("processed", `combined-cropped-${Date.now()}.pdf`);
 
-    await separateAndCrop(inputPath, invoicePath, labelPath);
+    await separateAndCrop(inputPath, combinedPath);
 
-    res.json({
-      message: "PDF separated successfully",
-      invoicePdf: `/processed/${path.basename(invoicePath)}`,
-      labelPdf: `/processed/${path.basename(labelPath)}`
+    res.download(combinedPath, "cropped-combined.pdf", () => {
+      fs.unlink(inputPath).catch(() => {});
+      fs.unlink(combinedPath).catch(() => {});
     });
   } catch (err) {
-    console.error("Separation Error:", err);
-    res.status(500).send("Failed to separate PDF");
+    console.error("Cropping Error:", err);
+    res.status(500).send("Failed to crop pages");
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
