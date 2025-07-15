@@ -18,12 +18,13 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
   for (let i = 0; i < originalPages.length; i++) {
     const page = originalPages[i];
     const { width, height } = page.getSize();
+
     const flipkartSku = skuList[i] || "UNKNOWN";
     const customSku = mapping[flipkartSku] || flipkartSku;
 
     const embeddedPage = await outputPdf.embedPage(page);
 
-    // ----- LABEL PAGE -----
+    // ------ LABEL PAGE ------
     const labelPage = outputPdf.addPage([width, height]);
     labelPage.drawPage(embeddedPage, {
       x: 0,
@@ -32,24 +33,41 @@ async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf")
       height,
     });
 
-    // ✅ Add SKU near "Not for Sale" area (bottom right-ish of label)
+    // Mask the bottom half (invoice)
+    labelPage.drawRectangle({
+      x: 0,
+      y: 0,
+      width,
+      height / 2,
+      color: rgb(1, 1, 1), // white mask
+    });
+
+    // Draw SKU near bottom-right (adjust as per your layout)
     labelPage.drawText(`SKU: ${customSku}`, {
-      x: 400,       // Adjust if you want left side
-      y: 50,        // Bottom area
+      x: width - 150,
+      y: 45,
       size: 11,
       font: helvetica,
       color: rgb(0, 0, 0),
     });
 
-    // ----- INVOICE PAGE -----
+    // ------ INVOICE PAGE ------
     const invoicePage = outputPdf.addPage([width, height]);
     invoicePage.drawPage(embeddedPage, {
       x: 0,
-      y: -height,   // Shift full page down so bottom half shows
+      y: -height / 2, // shift the page down so only bottom half is visible
       width,
       height,
     });
-    // ❌ No SKU drawn on invoice as per your instruction
+
+    // Mask the top half (label)
+    invoicePage.drawRectangle({
+      x: 0,
+      y: height / 2,
+      width,
+      height / 2,
+      color: rgb(1, 1, 1), // white mask
+    });
   }
 
   return await outputPdf.save();
