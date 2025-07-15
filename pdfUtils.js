@@ -1,38 +1,58 @@
-const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
-const pdfParse = require("pdf-parse");
-const { extractSkusFromText } = require("./skuUtils");
+const pdf = require("pdf-parse");
+const { parse } = require("csv-parse/sync");
 
-async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf") {
-  const pdfDoc = await PDFDocument.load(pdfBuffer);
-  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const pages = pdfDoc.getPages();
+function extractSkusFromText(text, mapping = {}) {
+  const lines = text.split("\n");
+  const skuData = {};
 
-  // ✅ Use pdf-parse to extract all text from the PDF
-  const parsedText = await pdfParse(pdfBuffer);
-  const skuData = extractSkusFromText(parsedText.text, mapping);
+  for (const line of lines) {
+    // Split by pipe and ensure there are at least 2 fields
+    const parts = line.split("|").map(p => p.trim());
+    if (parts.length < 2) continue;
 
-  // Flatten to match each page with one SKU based on frequency
-  const skuList = Object.entries(skuData).flatMap(([sku, data]) =>
-    Array(data.qty).fill(sku)
-  );
+    // Likely SKU is in 2nd column
+    let flipkartSku = parts[0];
 
-  for (let i = 0; i < pages.length; i++) {
-    const page = pages[i];
-    const { width, height } = page.getSize();
+    // Remove leading digits if stuck to SKU (e.g., 1A-SKU → A-SKU)
+    flipkartSku = flipkartSku.replace(/^\d+(?=[A-Za-z])/, "");
 
-    const flipkartSku = skuList[i] || "UNKNOWN";
+    // Skip if purely numeric or too short
+    if (/^\d+$/.test(flipkartSku) || flipkartSku.length < 3) continue;
+
+    // Optional: Require dash in SKU for stricter validation
+    if (!/[A-Za-z]/.test(flipkartSku) || !flipkartSku.includes("-")) continue;
+
     const customSku = mapping[flipkartSku] || "default";
 
-    page.drawText(`SKU: ${customSku}`, {
-      x: 195,  // Adjusted margin
-      y: 460,  // Adjusted margin
-      size: 11,
-      font: helvetica,
-      color: rgb(0, 0, 0),
-    });
+    if (!skuData[flipkartSku]) {
+      skuData[flipkartSku] = { customSku, qty: 0 };
+    }
+
+    skuData[flipkartSku].qty += 1;
   }
 
-  return await pdfDoc.save();
+  return skuData;
 }
 
-module.exports = { appendSkuToPdf };
+function generatePicklistCSV(skuData) {
+  const headers = "Flipkart SKU,Custom SKU,Total Qty\n";
+  const rows = Object.entries(skuData).map(
+    ([fk, data]) => `${fk},${data.customSku},${data.qty}`
+  );
+  return headers + rows.join("\n");
+}
+
+function parseMappingCSV(buffer) {
+  const records = parse(buffer, { columns: true, skip_empty_lines: true });
+  const mapping = {};
+  for (const record of records) {
+    const flipkart = record["Flipkart SKU"]?.trim();
+    const custom = record["Custom SKU"]?.trim();
+    if (flipkart && custom) {
+      mapping[flipkart] = custom;
+    }
+  }
+  return mapping;
+}
+
+module.exports = { extractSkusFromText, generatePicklistCSV, parseMappingCSV };
