@@ -3,74 +3,36 @@ const pdfParse = require("pdf-parse");
 const { extractSkusFromText } = require("./skuUtils");
 
 async function appendSkuToPdf(pdfBuffer, mapping = {}, fileName = "UNKNOWN.pdf") {
-  const originalPdf = await PDFDocument.load(pdfBuffer);
-  const helvetica = await originalPdf.embedFont(StandardFonts.Helvetica);
-  const originalPages = originalPdf.getPages();
+  const pdfDoc = await PDFDocument.load(pdfBuffer);
+  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const pages = pdfDoc.getPages();
 
+  // ✅ Use pdf-parse to extract all text from the PDF
   const parsedText = await pdfParse(pdfBuffer);
   const skuData = extractSkusFromText(parsedText.text, mapping);
+
+  // Flatten to match each page with one SKU based on frequency
   const skuList = Object.entries(skuData).flatMap(([sku, data]) =>
     Array(data.qty).fill(sku)
   );
 
-  const outputPdf = await PDFDocument.create();
-
-  for (let i = 0; i < originalPages.length; i++) {
-    const page = originalPages[i];
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
     const { width, height } = page.getSize();
 
     const flipkartSku = skuList[i] || "UNKNOWN";
-    const customSku = mapping[flipkartSku] || flipkartSku;
+    const customSku = mapping[flipkartSku] || "default";
 
-    const embeddedPage = await outputPdf.embedPage(page);
-
-    // ------ LABEL PAGE ------
-    const labelPage = outputPdf.addPage([width, height]);
-    labelPage.drawPage(embeddedPage, {
-      x: 0,
-      y: 0,
-      width,
-      height,
-    });
-
-    // Mask the bottom half (invoice)
-    labelPage.drawRectangle({
-      x: 0,
-      y: 0,
-      width,
-      height / 2,
-      color: rgb(1, 1, 1), // white mask
-    });
-
-    // Draw SKU near bottom-right (adjust as per your layout)
-    labelPage.drawText(`SKU: ${customSku}`, {
-      x: width - 150,
-      y: 45,
+    page.drawText(`SKU: ${customSku}`, {
+      x: 195,  // Adjusted margin
+      y: 460,  // Adjusted margin
       size: 11,
       font: helvetica,
       color: rgb(0, 0, 0),
     });
-
-    // ------ INVOICE PAGE ------
-    const invoicePage = outputPdf.addPage([width, height]);
-    invoicePage.drawPage(embeddedPage, {
-      x: 0,
-      y: -height / 2, // shift the page down so only bottom half is visible
-      width,
-      height,
-    });
-
-    // Mask the top half (label)
-    invoicePage.drawRectangle({
-      x: 0,
-      y: height / 2,
-      width,
-      height / 2,
-      color: rgb(1, 1, 1), // white mask
-    });
   }
 
-  return await outputPdf.save();
+  return await pdfDoc.save();
 }
 
 module.exports = { appendSkuToPdf };
