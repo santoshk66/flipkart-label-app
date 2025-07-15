@@ -34,7 +34,7 @@ async function separateAndCrop(inputPath, outInvoicePath, outLabelPath) {
   const labelPdf = await PDFDocument.create();
 
   const pages = pdfDoc.getPages();
-  const texts = parsed.text.split(/\f/); // Split by formfeed = page separator
+  const texts = parsed.text.split(/\f/); // Split by form feed = page separator
 
   for (let i = 0; i < pages.length; i++) {
     const text = texts[i] || "";
@@ -53,10 +53,5 @@ async function separateAndCrop(inputPath, outInvoicePath, outLabelPath) {
   console.log("✅ Cropping complete.");
 }
 
-(async () => {
-  await separateAndCrop(
-    "./uploads/Flipkart-Labels-14-Jul-2025-10-55.pdf",
-    "./processed/cropped-invoices.pdf",
-    "./processed/cropped-labels.pdf"
-  );
-})();
+// ✅ Export the function so Express route can use it
+module.exports = { separateAndCrop };
