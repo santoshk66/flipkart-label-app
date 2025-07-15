@@ -6,7 +6,6 @@ const fsSync = require("fs");
 const { parseMappingCSV } = require("./skuUtils");
 const { appendSkuToPdf } = require("./pdfUtils");
 const { extractSkusFromText, generatePicklistCSV } = require("./picklistUtils");
-const { separateAndCrop } = require("./separateAndCrop");
 const pdfParse = require("pdf-parse");
 
 const app = express();
@@ -84,26 +83,6 @@ app.post("/generate-picklist", upload.fields([
   } catch (err) {
     console.error("Picklist Error:", err);
     res.status(500).send("Failed to generate picklist");
-  }
-});
-
-app.post("/crop-combined", upload.single("labelPdf"), async (req, res) => {
-  try {
-    const pdfFile = req.file;
-    if (!pdfFile) return res.status(400).send("PDF file missing");
-
-    const inputPath = pdfFile.path;
-    const combinedPath = path.join("processed", `combined-cropped-${Date.now()}.pdf`);
-
-    await separateAndCrop(inputPath, combinedPath);
-
-    res.download(combinedPath, "cropped-combined.pdf", () => {
-      fs.unlink(pdfFile.path).catch(() => {});
-      fs.unlink(combinedPath).catch(() => {});
-    });
-  } catch (err) {
-    console.error("Crop Combined Error:", err);
-    res.status(500).send("Failed to crop pages");
   }
 });
 
