@@ -98,7 +98,6 @@ app.post("/separate", upload.single("labelPdf"), async (req, res) => {
 
     await separateAndCrop(inputPath, invoicePath, labelPath);
 
-    // Serve both files as zip or as links (simple: return success)
     res.json({
       message: "PDF separated successfully",
       invoicePdf: `/processed/${path.basename(invoicePath)}`,
